@@ -1,0 +1,7 @@
+coscmd
+numpy
+pandas
+sklearn
+tqdm
+timm
+transformers>=4.0.0
