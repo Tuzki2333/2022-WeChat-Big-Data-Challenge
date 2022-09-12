@@ -10,9 +10,9 @@ from third_party.fgm import *
 import numpy as np
 from transformers import AdamW, get_linear_schedule_with_warmup,  get_cosine_schedule_with_warmup
 
-from vlbert_finetune_config import parse_args
+from albef_finetune_config import parse_args
 from finetune_data_helper import create_dataloaders
-from vlbert_finetune_model import MultiModal
+from albef_finetune_model import ALBEF
 from util import setup_device, setup_seed, setup_logging, evaluate
 from sklearn.model_selection import KFold, StratifiedKFold
 from collections import Counter
@@ -50,12 +50,12 @@ def build_optimizer(args, model, num_total_steps):
     optimizer_grouped_parameters += [
         {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay) and 'bert.embeddings' in n], 'lr': lr, 'weight_decay': args.weight_decay},
         {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay) and 'bert.embeddings' in n], 'lr': lr, 'weight_decay': 0.0},
-        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay) and 'vision_bert_embeddings' in n], 'lr': lr, 'weight_decay': args.weight_decay},
-        {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay) and 'vision_bert_embeddings' in n], 'lr': lr, 'weight_decay': 0.0},
+        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay) and 'visual_encoder.embeddings' in n], 'lr': lr, 'weight_decay': args.weight_decay},
+        {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay) and 'visual_encoder.embeddings' in n], 'lr': lr, 'weight_decay': 0.0},
         {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay) and 'vision_fc' in n], 'lr': lr, 'weight_decay': args.weight_decay},
         {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay) and 'vision_fc' in n], 'lr': lr, 'weight_decay': 0.0},
-        {'params': [p for n, p in model.named_parameters() if (not any(nd in n for nd in no_decay)) and (not 'bert' in n) and (not 'vision_fc' in n)],'weight_decay': args.weight_decay},
-        {'params': [p for n, p in model.named_parameters() if (any(nd in n for nd in no_decay)) and (not 'bert' in n) and (not 'vision_fc' in n)], 'weight_decay': 0.0},
+        {'params': [p for n, p in model.named_parameters() if (not any(nd in n for nd in no_decay)) and (not 'bert' in n) and (not 'vision_fc' in n) and (not 'visual_encoder' in n)],'weight_decay': args.weight_decay},
+        {'params': [p for n, p in model.named_parameters() if (any(nd in n for nd in no_decay)) and (not 'bert' in n) and (not 'vision_fc' in n) and (not 'visual_encoder' in n)], 'weight_decay': 0.0},
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
     scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=int(args.warmup_ratio*num_total_steps),
@@ -63,7 +63,7 @@ def build_optimizer(args, model, num_total_steps):
     # for n, p in model.named_parameters():
     #     if p.requires_grad:
     #         print(n, p.size())
-    return optimizer, scheduler
+    return optimizer, scheduler                
                 
 def validate(model, val_dataloader):
     model.eval()
@@ -79,6 +79,7 @@ def validate(model, val_dataloader):
             losses.append(loss.cpu().numpy())
     loss = sum(losses) / len(losses)
     results = evaluate(predictions, labels)
+
     model.train()
     return loss, results
 
@@ -88,14 +89,21 @@ def train_and_validate(args):
         # 1. load data
         with open(args.train_annotation, 'r', encoding='utf8') as f:
             anns = json.load(f)
+            
         x = []
         y = []
         for idx in range(0,len(anns)):
             x.append(idx)
             y.append(category_id_to_lv2id(anns[idx]['category_id']))
+        
         cv = StratifiedKFold(n_splits = args.n_splits, shuffle = True, random_state = args.seed)
-        for fold, (train_index, val_index) in enumerate(cv.split(x, y)): 
+        
+        # print(Counter(np.array(y)))
+        
+        for fold, (train_index, val_index) in enumerate(cv.split(x, y)):
+            
             if (fold == args.fold):
+                # print(Counter(np.array(y)[val_index]))
                 train_dataloader, val_dataloader = create_dataloaders(args, train_index, val_index)
                 break
                 
@@ -103,12 +111,11 @@ def train_and_validate(args):
         train_dataloader = create_dataloaders(args)
 
     # 2. build model and optimizers
-    model = MultiModal(args)
-    
+    # model = MultiModal(args)
+    model = ALBEF(args)
     if (args.pretrain_ckpt_file != ''):
         checkpoint = torch.load(args.pretrain_ckpt_file, map_location='cpu')
-        model.load_state_dict(checkpoint['model_state_dict'], strict = False)
-    
+        model.load_state_dict(checkpoint['model_state_dict'], strict=False)
     num_total_steps = len(train_dataloader) * args.max_epochs
     optimizer, scheduler = build_optimizer(args, model, num_total_steps)
     if args.device == 'cuda':
@@ -134,12 +141,11 @@ def train_and_validate(args):
             loss.backward()
             
             if (args.use_fgm):
-                fgm.attack() 
+                fgm.attack(0.5, emb_name='bert.embeddings') 
                 loss_sum, _, _, _ = model(batch)
-                loss_sum = loss_sum.mean()
-                loss_sum.backward()
-                fgm.restore()
-            
+                loss_sum.backward() 
+                fgm.restore(emb_name='bert.embeddings') 
+                
             optimizer.step()
             optimizer.zero_grad()
             scheduler.step()

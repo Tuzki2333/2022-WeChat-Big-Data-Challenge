@@ -1,7 +1,5 @@
-coscmd
-numpy
-pandas
-sklearn
-tqdm
-timm
-transformers>=4.0.0
+numpy==1.21.4
+pandas==1.4.2
+scikit_learn==1.1.1
+scipy==1.8.1
+transformers==4.20.0

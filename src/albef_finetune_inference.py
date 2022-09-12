@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import SequentialSampler, DataLoader
 
-from vlbert_finetune_config import parse_args
+from albef_finetune_config import parse_args
 from finetune_data_helper import MultiModalDataset
 from category_id_map import lv2id_to_category_id
-from vlbert_finetune_model import MultiModal
+from albef_finetune_model import ALBEF
 
 import numpy as np
 import os
@@ -26,7 +26,7 @@ def inference():
                             prefetch_factor=args.prefetch)
 
     # 2. load model
-    model = MultiModal(args)
+    model = ALBEF(args)
     checkpoint = torch.load(args.ckpt_file, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
     if torch.cuda.is_available():

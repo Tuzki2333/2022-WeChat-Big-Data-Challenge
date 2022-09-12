@@ -9,9 +9,8 @@ def parse_args():
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout ratio')
     parser.add_argument('--device', type=str, default='gpu')
     parser.add_argument('--use_parallel', default=False, type=bool)
-    
+
     parser.add_argument('--use_mlm', default=True, type=bool)
-    parser.add_argument('--use_mfm', default=False, type=bool)
     parser.add_argument('--use_itm', default=True, type=bool)
 
     # ========================= Data Configs ==========================
@@ -21,7 +20,7 @@ def parse_args():
     parser.add_argument('--train_zip_feats', type=str, default='data/zip_feats/labeled.zip')
     parser.add_argument('--train_zip_feats_unlabeled', type=str, default='data/zip_feats/unlabeled.zip')
 
-    parser.add_argument('--batch_size', default=108, type=int, help="use for training duration per worker")
+    parser.add_argument('--batch_size', default=110, type=int, help="use for training duration per worker")
     parser.add_argument('--prefetch', default=16, type=int, help="use for training duration per worker")
     parser.add_argument('--num_workers', default=12, type=int, help="num_workers for dataloaders")
 
@@ -44,7 +43,7 @@ def parse_args():
     parser.add_argument('--bert_output_size', type=int, default=768)
     parser.add_argument('--bert_cache', type=str, default='data/cache')
     
-    parser.add_argument('--bert_seq_length_concat', type=int, default=384) 
+    parser.add_argument('--bert_seq_length_concat', type=int, default=384)
     parser.add_argument('--bert_learning_rate', type=float, default=5e-5)
     parser.add_argument('--bert_layerwise_learning_rate_decay', type=float, default=1.0)
 
@@ -52,5 +51,8 @@ def parse_args():
     parser.add_argument('--frame_embedding_size', type=int, default=768)
     parser.add_argument('--max_frames', type=int, default=32)
     parser.add_argument('--use_vision_bert_emb', type=bool, default=True)
+
+    # ========================== ALBEF =============================
+    parser.add_argument('--vision_layer_num', type=int, default=1)
 
     return parser.parse_args()

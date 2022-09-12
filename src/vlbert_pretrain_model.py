@@ -16,19 +16,17 @@ class MultiModal(nn.Module):
         super().__init__()
         
         self.device = args.device
+        self.bert_output_size = args.bert_output_size
         self.bert = BertModel.from_pretrained(args.bert_dir, cache_dir = args.bert_cache)
         self.bert_config = BertConfig.from_pretrained(args.bert_dir, cache_dir = args.bert_cache)
         # print(self.bert_config)
         
-        bert_output_size = 768
-        self.max_frames = args.max_frames
-        
-        self.vision_fc = MultiLayerPerceptron(args.frame_embedding_size, bert_output_size, bn = False)
+        self.vision_fc = MultiLayerPerceptron(args.frame_embedding_size, args.bert_output_size, bn = False)
         self.vision_bert_embeddings = BertEmbeddings(self.bert_config)
         
-        self.use_mlm = True
+        self.use_mlm = args.use_mlm
         self.use_mfm = args.use_mfm
-        self.use_itm = True
+        self.use_itm = args.use_itm
         
         if self.use_mlm:
             self.lm = MaskWord(tokenizer_path=args.bert_dir, cache_dir=args.bert_cache)
@@ -88,12 +86,12 @@ class MultiModal(nn.Module):
         
         # compute pretrain task loss
         if self.use_mlm:
-            lm_output = self.mlm_head(bert_output_last_hidden_state)[:,(1+self.max_frames):,:].contiguous().view(-1, self.vocab_size)
+            lm_output = self.mlm_head(bert_output_last_hidden_state)[:,33:,:].contiguous().view(-1, self.vocab_size)
             mlm_loss = nn.CrossEntropyLoss()(lm_output, lm_label.contiguous().view(-1))
             loss += mlm_loss /1.25/ (self.use_mlm+self.use_mfm+self.use_itm)
             
         if self.use_mfm:
-            vm_output = self.mfm_head(bert_output_last_hidden_state[:,1:(1+self.max_frames),:])
+            vm_output = self.mfm_head(bert_output_last_hidden_state[:,1:33,:])
             mfm_loss = calculate_mfm_loss(vm_output, vm_input, video_input_mask, video_label)
             loss += mfm_loss /3/ (self.use_mlm+self.use_mfm+self.use_itm)
             
@@ -101,11 +99,8 @@ class MultiModal(nn.Module):
             pred = self.newfc_itm(bert_output_last_hidden_state[:,0,:])
             itm_loss = nn.BCEWithLogitsLoss()(pred.view(-1), video_text_match_label.view(-1))
             loss += itm_loss /100/ (self.use_mlm+self.use_mfm+self.use_itm)
-        
-        if self.use_mfm:
-            return mlm_loss, mfm_loss, itm_loss, loss
-        else:
-            return mlm_loss, itm_loss, loss
+
+        return mlm_loss, mfm_loss, itm_loss, loss
 
 class MultiLayerPerceptron(nn.Module):
 

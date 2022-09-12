@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Weixin Challenge 2022")
 
@@ -27,7 +28,7 @@ def parse_args():
 
     # ======================== SavedModel Configs =========================
     parser.add_argument('--savedmodel_path', type=str, default='')
-    parser.add_argument('--ckpt_file', type=str, default='')
+    parser.add_argument('--ckpt_file', type=str,default='')
     parser.add_argument('--pretrain_ckpt_file', type=str, default='')
 
     # ========================= Learning Configs ==========================
@@ -41,7 +42,7 @@ def parse_args():
     parser.add_argument('--learning_rate', default=1e-4, type=float, help='initial learning rate')
     parser.add_argument("--weight_decay", default=0.01, type=float, help="Weight deay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-6, type=float, help="Epsilon for Adam optimizer.")
-    
+
     parser.add_argument('--use_fgm', type=bool, default=False)
     parser.add_argument('--use_ema', type=bool, default=False)
 
@@ -54,7 +55,7 @@ def parse_args():
     parser.add_argument('--bert_learning_rate', type=float, default=2e-5)
     parser.add_argument('--bert_layerwise_learning_rate_decay', type=float, default=0.975)
     parser.add_argument('--bert_freezing_layers', type=int, default=0)
-    
+
     # ========================== Video =============================
     parser.add_argument('--use_vlad', type=bool, default=True)
     parser.add_argument('--frame_embedding_size', type=int, default=768)
@@ -63,10 +64,13 @@ def parse_args():
     parser.add_argument('--vlad_groups', type=int, default=8)
     parser.add_argument('--vlad_hidden_size', type=int, default=1024, help='nextvlad output size using dense')
     parser.add_argument('--se_ratio', type=int, default=8, help='reduction factor in se context gating')
-    parser.add_argument('--use_vision_bert_emb', type=bool, default=True)
-    
+    parser.add_argument('--use_vision_bert_emb', type=bool, default=False)
+
     # ========================== Fusion Layer =============================
     parser.add_argument('--fc_size', type=int, default=768, help="linear size before final linear")
     parser.add_argument('--classifier_mlp_sizes', nargs='+', type=int, default=[768])
+
+    # ========================== ALBEF =============================
+    parser.add_argument('--vision_layer_num', type=int, default=1)
 
     return parser.parse_args()

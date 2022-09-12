@@ -1,51 +1,21 @@
-cd /opt/ml/wxcode/src
+cd src/
 
-python -u -m torch.distributed.launch --nproc_per_node=2 extract_feature_inference.py \
-    --max_frames 16 \
-    --model_pretrained_path save/finetune_mlm_mfm_itm_base/model_step_19000.bin \
-    --ann_path /opt/ml/input/data/annotations/test.json \
-    --zip_frame_dir /opt/ml/input/data/zip_frames/test/ \
-    --output_path temp
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_itm/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_itm'
 
-python -u -m torch.distributed.launch --nproc_per_node=2 vlbert_finetune_inference.py \
-    --max_frames 16 --bert_seq_length 256 \
-    --test_annotation /opt/ml/input/data/annotations/test.json \
-    --test_zip_frames /opt/ml/input/data/zip_frames/test/ \
-    --test_zip_feat_path temp \
-    --ckpt_file save/finetune_mlm_mfm_itm_base/model_step_19000.bin \
-    --test_output_path save/finetune_mlm_mfm_itm_base/
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm'
 
-python -u -m torch.distributed.launch --nproc_per_node=2 vlbert_finetune_inference.py \
-    --max_frames 16 --bert_seq_length 256 \
-    --test_annotation /opt/ml/input/data/annotations/test.json \
-    --test_zip_frames /opt/ml/input/data/zip_frames/test/ \
-    --test_zip_feat_path temp \
-    --ckpt_file save/finetune_mlm_mfm_itm_short_seq/model_step_19000.bin \
-    --test_output_path save/finetune_mlm_mfm_itm_short_seq/
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm_fold_0/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm_fold_0'
 
-python -u -m torch.distributed.launch --nproc_per_node=2 vlbert_finetune_inference.py \
-    --max_frames 16 --bert_seq_length 384 \
-    --test_annotation /opt/ml/input/data/annotations/test.json \
-    --test_zip_frames /opt/ml/input/data/zip_frames/test/ \
-    --test_zip_feat_path temp \
-    --ckpt_file save/finetune_mlm_mfm_itm_long_seq/model_step_19000.bin \
-    --test_output_path save/finetune_mlm_mfm_itm_long_seq/
-    
-python -u -m torch.distributed.launch --nproc_per_node=2 vlbert_finetune_inference.py \
-    --max_frames 16 --bert_seq_length 256 \
-    --test_annotation /opt/ml/input/data/annotations/test.json \
-    --test_zip_frames /opt/ml/input/data/zip_frames/test/ \
-    --test_zip_feat_path temp \
-    --ckpt_file save/finetune_mlm_itm_short_seq/model_step_19000.bin \
-    --test_output_path save/finetune_mlm_itm_short_seq/
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm_fold_1/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm_fold_1'
 
-python -u -m torch.distributed.launch --nproc_per_node=2 vlbert_finetune_inference.py \
-    --max_frames 16 --bert_seq_length 384 \
-    --test_annotation /opt/ml/input/data/annotations/test.json \
-    --test_zip_frames /opt/ml/input/data/zip_frames/test/ \
-    --test_zip_feat_path temp \
-    --ckpt_file save/finetune_mlm_itm_long_seq/model_step_19000.bin \
-    --test_output_path save/finetune_mlm_itm_long_seq/
-    
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm_fold_2/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm_fold_2'
+
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm_fold_3/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm_fold_3'
+
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_base_mlm_mfm_itm_fold_4/model_step_9000.bin' --test_output_path 'vlbert_base_mlm_mfm_itm_fold_4'
+
+python vlbert_finetune_inference.py --ckpt_file 'data/finetune_save/vlbert_large_mlm_mfm_itm/model_step_9000.bin' --bert_output_size 1024 --bert_freezing_layers 12 --bert_dir 'hfl/chinese-roberta-wwm-ext-large' --test_output_path 'vlbert_large_mlm_mfm_itm'
+
+python albef_finetune_inference.py --ckpt_file 'data/finetune_save/albef_mlm_itm/model_step_9000.bin' --test_output_path 'albef_mlm_itm'
+
 python merge.py
-    

@@ -28,7 +28,7 @@ CATEGORY_ID_LIST = [
 
 CATEGORY_ID_TO_LV2ID = {k: v for v, k in enumerate(CATEGORY_ID_LIST)}
 LV2ID_TO_CATEGORY_ID = {v: k for v, k in enumerate(CATEGORY_ID_LIST)}
-
+LV1ID = {int(k[0:2]) for k in CATEGORY_ID_LIST}
 
 def category_id_to_lv1id(category_id: str) -> int:
     """ Convert string category_id to level-1 class id. """
@@ -49,3 +49,10 @@ def lv2id_to_lv1id(lv2id: int) -> int:
     """ Convert level-2 class id to level-1 class id. """
     category_id = lv2id_to_category_id(lv2id)
     return category_id_to_lv1id(category_id)
+
+def lv1id_to_nest(lv1id: int) -> int:
+    lv2id = []
+    for v,k in enumerate(CATEGORY_ID_LIST):
+        if (int(k[0:2])==lv1id):
+            lv2id.append(v)
+    return lv2id

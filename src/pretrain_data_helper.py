@@ -14,7 +14,7 @@ import scipy
 
 
 def create_dataloaders(args, train_index = None, val_index = None):
-    dataset = MultiModalDataset(args, args.train_annotation, args.train_annotation_unlabeled, args.train_zip_feat_path, args.train_zip_feat_path_unlabeled)
+    dataset = MultiModalDataset(args, args.train_annotation, args.train_annotation_unlabeled, args.train_zip_feats, args.train_zip_feats_unlabeled)
     
     train_sampler = RandomSampler(dataset)
     train_dataloader = DataLoader(dataset,
@@ -22,8 +22,8 @@ def create_dataloaders(args, train_index = None, val_index = None):
                                   sampler=train_sampler,
                                   drop_last=True,
                                   pin_memory=True,
-                                  num_workers=args.train_num_workers,
-                                  prefetch_factor=args.train_prefetch_factor)
+                                  num_workers=args.num_workers,
+                                  prefetch_factor=args.prefetch)
     return train_dataloader
 
 
@@ -39,10 +39,10 @@ class MultiModalDataset(Dataset):
         
         self.max_frame = args.max_frames
         
-        self.bert_seq_length_concat = args.bert_seq_length
+        self.bert_seq_length_concat = args.bert_seq_length_concat
         
         self.test_mode = test_mode
-        self.num_workers = args.train_num_workers
+        self.num_workers = args.num_workers
 
         # lazy initialization for zip_handler to avoid multiprocessing-reading error
         self.zip_feat_path = zip_feats
@@ -90,11 +90,10 @@ class MultiModalDataset(Dataset):
         raw_feats = raw_feats.astype(np.float32)  # float16 to float32
         num_frames, feat_dim = raw_feats.shape
 
-        feat = torch.zeros((self.max_frame, feat_dim), dtype=torch.float32)
-        mask = torch.ones((self.max_frame,), dtype=torch.long)
-        
+        feat = np.zeros((self.max_frame, feat_dim), dtype=np.float32)
+        mask = np.ones((self.max_frame,), dtype=np.int32)
         if num_frames <= self.max_frame:
-            feat[:num_frames] = torch.from_numpy(raw_feats)
+            feat[:num_frames] = raw_feats
             mask[num_frames:] = 0
         else:
             # if the number of frames exceeds the limitation, we need to sample
@@ -111,7 +110,9 @@ class MultiModalDataset(Dataset):
                 select_inds = select_inds[:self.max_frame]
                 select_inds = sorted(select_inds)
             for i, j in enumerate(select_inds):
-                feat[i] = torch.from_numpy(raw_feats[j])
+                feat[i] = raw_feats[j]
+        feat = torch.FloatTensor(feat)
+        mask = torch.LongTensor(mask)
         return feat, mask
 
     def tokenize_sep_text_by_truncate_last(self, text_1: str, text_2: str, text_3: str, max_length: int) -> tuple:
@@ -191,6 +192,7 @@ class MultiModalDataset(Dataset):
         data = dict(
             frame_input=frame_input,
             frame_mask=frame_mask,
+
             concat_text_input=concat_text_input,
             concat_text_mask=concat_text_mask
         )
